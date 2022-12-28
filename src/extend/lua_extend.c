@@ -80,17 +80,29 @@ static int lua_ext_delay( lua_State* L)
 	return 0;
 }
 /* ======================================================================== */
+#define swap_endian(v,bytes)   do {\
+    for (uint32_t indx=0;indx<bytes/2;++indx) {\
+        uint8_t t = (uint8_t)v[indx];\
+        v[indx] = v[bytes-indx-1];\
+        v[bytes-indx-1] = t;\
+    }\
+} while(0)
+/* ======================================================================== */
 static int conv_uint64(lua_State *L )
 {
+	bool big = lua_toboolean(L, 2);
 	if (lua_isinteger(L,1)) {
 			// convert from int to string
 			lua_Integer val = lua_tointeger(L,1);
-			const char *bfr = (const char*)&val;
+			char *bfr = (char*)&val;
+			if (big) swap_endian(bfr,8);
 			lua_pushlstring(L, bfr, 8);
 	}
 	else if (lua_isstring(L,1)) {
 		// convert from string to Unit32
 		uint64_t* val= (uint64_t*) lua_tostring(L,1);
+		char *c = (char*)val;
+		if (big) swap_endian(c,8);
 		lua_pushinteger(L, (*val)&0xFFFFFFFFFFFFFFFF);
 	}
 	else return
@@ -101,15 +113,18 @@ static int conv_uint64(lua_State *L )
 /* ------------------------------------------------------------------------ */
 static int conv_uint32(lua_State *L )
 {
+	bool big = lua_toboolean(L, 2);
 	if (lua_isinteger(L,1)) {
 			// convert from int to string
 			lua_Integer val = lua_tointeger(L,1);
-			const char *bfr = (const char*)&val;
-			lua_pushlstring(L, bfr, 4);
+			char *bfr = (char*)&val;
+			if (big) swap_endian(bfr,4);
 	}
 	else if (lua_isstring(L,1)) {
 		// convert from string to Unit32
 		lua_Integer* val= (lua_Integer*) lua_tostring(L,1);
+		char *c = (char*)val;
+		if (big) swap_endian(c,4);
 		lua_pushinteger(L, (*val)&0xFFFFFFFF);
 	}
 	else return
@@ -120,15 +135,19 @@ static int conv_uint32(lua_State *L )
 /* ------------------------------------------------------------------------ */
 static int conv_float(lua_State *L )
 {
+	bool big = lua_toboolean(L, 2);
 	if (lua_isnumber(L,1)) {
 		// convert from int to string
 		float val = lua_tonumber(L,1);
-		const char *bfr = (const char*)&val;
+		char *bfr = (char*)&val;
+		if (big) swap_endian(bfr,4);
 		lua_pushlstring(L, bfr, 4);
 	}
 	else if (lua_isstring(L,1)) {
 		// convert from string to Unit32
 		float* val= (float*) lua_tostring(L,1);
+		char *c = (char*)val;
+		if (big) swap_endian(c,4);
 		lua_pushnumber(L, *val);
 	}
 	else return
@@ -139,15 +158,18 @@ static int conv_float(lua_State *L )
 /* ------------------------------------------------------------------------ */
 static int conv_uint16(lua_State *L )
 {
+	bool big = lua_toboolean(L, 2);
 	if (lua_isinteger(L,1)) {
 		// convert from int to string
 		lua_Integer val = lua_tointeger(L,1);
-		const char *bfr = (const char*)&val;
+		char *bfr = (char*)&val;
+		if (big) swap_endian(bfr,2);
 		lua_pushlstring(L, bfr, 2);
 	}
 	else if (lua_isstring(L,1)) {
 		// convert from string to Unit32
 		lua_Integer* val= (lua_Integer*) lua_tostring(L,1);
+		if (big) swap_endian(((char*)val),2);
 		lua_pushinteger(L, (*val)&0xFFFF);
 	}
 	else return
@@ -177,15 +199,18 @@ static int conv_uint8(lua_State *L )
 /* ------------------------------------------------------------------------ */
 static int conv_double(lua_State *L )
 {
+	bool big = lua_toboolean(L, 2);
 	if (lua_isnumber(L,1)) {
 		// convert from int to string
 		double val = lua_tonumber(L,1);
-		const char *bfr = (const char*)&val;
+		char *bfr = (char*)&val;
+		if (big) swap_endian(bfr,8);
 		lua_pushlstring(L, bfr, 8);
 	}
 	else if (lua_isstring(L,1)) {
 		// convert from string to Unit32
 		double* val= (double*) lua_tostring(L,1);
+		if (big) swap_endian( ((char*)val), sizeof(double));
 		lua_pushnumber(L, *val);
 	}
 	else return
