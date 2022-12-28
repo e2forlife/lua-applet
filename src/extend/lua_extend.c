@@ -80,6 +80,25 @@ static int lua_ext_delay( lua_State* L)
 	return 0;
 }
 /* ======================================================================== */
+static int conv_uint64(lua_State *L )
+{
+	if (lua_isinteger(L,1)) {
+			// convert from int to string
+			lua_Integer val = lua_tointeger(L,1);
+			const char *bfr = (const char*)&val;
+			lua_pushlstring(L, bfr, 8);
+	}
+	else if (lua_isstring(L,1)) {
+		// convert from string to Unit32
+		uint64_t* val= (uint64_t*) lua_tostring(L,1);
+		lua_pushinteger(L, (*val)&0xFFFFFFFFFFFFFFFF);
+	}
+	else return
+			luaL_error(L,"Incompatible type for argument 1, expected string or integer");
+
+	return 1;
+}
+/* ------------------------------------------------------------------------ */
 static int conv_uint32(lua_State *L )
 {
 	if (lua_isinteger(L,1)) {
@@ -241,6 +260,8 @@ LUALIB_API int luaopen_ext( lua_State *L)
 	lua_pushcfunction(L,ext_ansi_enable);
 	lua_setglobal(L,"ansi_enable");
 
+	lua_pushcfunction(L,conv_uint64);
+	lua_setglobal(L,"uint64");
 	lua_pushcfunction(L,conv_uint32);
 	lua_setglobal(L,"uint32");
 	lua_pushcfunction(L,conv_uint16);
