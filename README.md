@@ -134,7 +134,7 @@ Once the Lua environment is build, run the `scripts\build.bat` batch file to use
 **Date**: 27-DEC-2022<br>
 (c)2021-2022 E2ForLife.com, CC-BY-SA-NC v4.0
 
-| <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">![Creative Commons License](../../img/CC88x31.png)</a> | This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License</a>. |
+| <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">![Creative Commons License](./img/CC88x31.png)</a> | This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License</a>. |
 | -------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 
 ---
