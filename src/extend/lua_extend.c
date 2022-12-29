@@ -27,21 +27,19 @@
 
 int kbhit() 
 {
-    static const int STDIN = 0;
-    static bool initialized = false;
+	struct termios old, current;
 
-    if (! initialized) {
-        // Use termios to turn off line buffering
-        struct termios term;
-        tcgetattr(STDIN, &term);
-        term.c_lflag &= ~ICANON;
-        tcsetattr(STDIN, TCSANOW, &term);
-        setbuf(stdin, NULL);
-        initialized = true;
-    }
+	tcgetattr(0, &old); /* grab old terminal i/o settings */
+  	memcpy(&current, &old, sizeof(struct termios)); /* make new settings same as old settings */
+  	current.c_lflag &= ~ICANON; /* disable buffered i/o */
+	current.c_lflag &= ~ECHO; /* set no echo mode */
+  	tcsetattr(0, TCSANOW, &current); /* use these new terminal i/o settings now */
 
     int bytesWaiting;
-    ioctl(STDIN, FIONREAD, &bytesWaiting);
+    ioctl(0, FIONREAD, &bytesWaiting);
+
+	tcsetattr(0, TCSANOW, &old);
+
     return bytesWaiting;
 }
 
@@ -52,14 +50,15 @@ int getch( void )
 	struct termios old, current;
 	int ch = 0;
 
-	tcgetattr(0, &old); /* grab old terminal i/o settings */
-  	memcpy(&current, &old, sizeof(struct termios)); /* make new settings same as old settings */
-  	current.c_lflag &= ~ICANON; /* disable buffered i/o */
-	current.c_lflag &= ~ECHO; /* set no echo mode */
-  	tcsetattr(0, TCSANOW, &current); /* use these new terminal i/o settings now */
-	ch = getchar();
-	tcsetattr(0, TCSANOW, &old);
-
+	if (kbhit() ) {
+		tcgetattr(0, &old); /* grab old terminal i/o settings */
+		memcpy(&current, &old, sizeof(struct termios)); /* make new settings same as old settings */
+		current.c_lflag &= ~ICANON; /* disable buffered i/o */
+		current.c_lflag &= ~ECHO; /* set no echo mode */
+		tcsetattr(0, TCSANOW, &current); /* use these new terminal i/o settings now */
+		ch = getchar();
+		tcsetattr(0, TCSANOW, &old);
+	}
 	return ch;
 }
 #endif
