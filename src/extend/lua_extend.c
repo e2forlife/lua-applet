@@ -258,7 +258,10 @@ static int lua_encrypt(lua_State *L)
 static int lua_ext_getchar( lua_State *L)
 {
 	int v = getch();
-	lua_pushlstring(L,(const char*)&v,sizeof(int));
+	if (v != 0) {
+		lua_pushlstring(L,(const char*)&v,1);
+	}
+	else lua_pushnil(L);
 	return 1;
 }
 /* ------------------------------------------------------------------------ */
