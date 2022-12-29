@@ -15,6 +15,23 @@ This folder contains modules that can be `require`d by the application to provoc
       - [A:go](#ago)
       - [A:message](#amessage)
       - [A:show\_bin](#ashow_bin)
+- [Base64 Conversion Tools](#base64-conversion-tools)
+- [Progress Bar](#progress-bar)
+  - [Description](#description)
+  - [Progress Bar API](#progress-bar-api)
+    - [Including the Progress Bar in you applet](#including-the-progress-bar-in-you-applet)
+    - [progress.version](#progressversion)
+    - [progress.size](#progresssize)
+    - [progress.min](#progressmin)
+    - [progress.max](#progressmax)
+    - [progress.step](#progressstep)
+    - [progress.position](#progressposition)
+    - [progress.char\[\]](#progresschar)
+    - [progress.bar](#progressbar)
+    - [progress.new](#progressnew)
+    - [PB:pos](#pbpos)
+    - [PB:next](#pbnext)
+    - [PB:render](#pbrender)
 - [Acknowledgements](#acknowledgements)
 
 ## Including frameworks and libraries
@@ -180,13 +197,118 @@ This function is used to output a block of binary data as hexadecimal values as 
 
 ---
 
+# Base64 Conversion Tools
+
+---
+
+# Progress Bar
+
+An ASCII progress bar for showing progress or other information
+
+> ![Warning](../../img/alert48x48.png) There are two versions of the progress bar library included.  It is recommended that `progress2.lua` be used for all new applets.  `progress.lua` has been deprecated and is not recommended for use.
+
+## Description
+
+The progress bar library is designed as a modular library to simplify progress bar creation to show operation progress, and/or other information that has a min and max value (somewhat) graphically using ASCII.  The progress bar is rendered into a string that can be used with all other string functions.  The minimum value, maximum value and overall length (in characters) of the bar can be set to customize the output strings rendered.  The bar will also track the present position and provides an update function that both updates the bar to the next step, and also renders the updated progress bar string.
+
+> ![Note](../../img/note50x50.png) The rendered string may contain escape sequences intended for the `ansi()` output function.  This can be overridden by setting the strings used when rendering the progress bar.
+
+
+## Progress Bar API
+
+The progress bar application programming interface (API) information assumes the variable name `PB` for progress bar meta-table objects, and uses the `progress` variable when referring to the data returned from the `require` statement.
+
+### Including the Progress Bar in you applet
+
+To use the progress bar object, `require` the progress bar Lua script at the start of your applet then use the `progress.new()` function to generate a new meta-table object to be used in the applet.
+
+```Lua
+progress = require "progress2"  -- use Progress2 rather than progress.  
+PB = progress.new()  -- create the new progress bar object (using defaults)
+```
+
+### progress.version
+
+This object value is the present version of the progress bar implementation.  Since this value can be overridden by the applet object, it is recommended to always use `progress.version` when checking the progress bar library version.
+
+### progress.size
+
+The `size` of the progress bar is the total number of characters used to render the bar horizontally.  This value can be overridden by assigning a value to `PB.size` in the applet object.
+
+### progress.min
+
+The minimum numerical value of the value range handled by the progress bar.
+
+### progress.max
+
+The maximum numerical value of the value range handled by the progress bar.
+
+### progress.step
+
+The individual step size of the progress bar when updating to the `next()` value.  This is the value added to the present position of the bar when updating.
+
+### progress.position
+
+The present position of the progress bar.  Normally this is not directly accessed, rather is handled by calling the `PB:pos()` function to read or write the present position.
+
+### progress.char[]
+
+This value is a table of strings used when rendering the bar.  There are 5 values in the indexed table that are 0%, 25%, 50%, 75%, and 100% of each individual character comprising the bar.  For example, if there was a bar that was 10 characters long that represented a value of 0 through 100, each step would represent 10 units.  The progress bar would render a value of 1 through 2.5 as 25% character, 2.6 through 5 as the 50% character and so on until 10 was achieved at which point the 100% character would be used for that position in the bar.  The characters can be overridden from their default value of `progress.char = {"{c7}=", "{c4}\\", "{c12}|", "{c14}/", "{c10}#" }` to use any ASCII characters desired for the applet.
+
+### progress.bar
+The `.bar` is a string that contains the format string for the output progress bar.  This string contains the placeholder tags `${BAR}` to represent the progress bar content. 
+
+### progress.new
+
+```Lua
+PB = progress.new(size, max, min)
+```
+
+| Argument | Supported<br/>Types | Description                                                            | Default |
+| :------: | :-----------------: | :--------------------------------------------------------------------- | :-----: |
+|  `size`  |      `number`       | This value represents the number of characters used to render the bar. |   50    |
+|  `max`   |      `number`       | The maximum value that can be represented by the bar.                  |   100   |
+|  `min`   |      `number`       | The minimum value that can be represented by the bar.                  |    0    |
+
+The `progress.new()` function is used to create a new meta-table object that is the applet progress bar.  This implementation enables multiple progress bars to be generated and maintained by an applet with unique ranges and customizations as required within the applet.  The default configuration of the progress bar can be overridden through assigning values to the arguments passed to the function.  The `size` argument is used to set the overall length of the progress bar in characters.  When it is not specified, the progress bar is assumed to be 50 characters long.  The range covered by the progress bar can be specified by assigning values to the `max` and `min` arguments.  When not assigned, the values of `100` and `0` are assumed respectively.  The function will return an initialized meta-table object for the progress bar.
+
+### PB:pos
+
+```Lua
+current, str = PB:pos( new )
+```
+
+| Argument | Supported<br/>Types | Description                                                                     | Default |
+| :------: | :-----------------: | :------------------------------------------------------------------------------ | :-----: |
+|  `new`   |      `number`       | Optional argument that will assign a new value to the bar position when present |  `nil`  |
+
+This function is used to set or get the present position tracked by the progress bar.  Additionally, this function will also render the present progress bar to a string and return the rendered string as a second return value.  When the `new` argument is assigned a value, the current position of the bar will be updated to the value stored in `new`.
+
+### PB:next
+
+```Lua
+str = PB:next()
+```
+
+The `PB:next()` function will update the current position to the next step, and then execute a render of the updated progress to a string that is returned.
+
+### PB:render
+
+```Lua
+str = PB:render()
+```
+
+This function will render the progress bar to a string.  The rendered string is returned.
+
+---
+
 **Author**: Chuck Erhardt<br>
 **Revision**: 0.5.0<br>
 **Date**: 27-DEC-2022<br>
 (c)2021-2022 E2ForLife.com, CC-BY-SA-NC v4.0
 
 | <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">![Creative Commons License](../../img/CC88x31.png)</a> | This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License</a>. |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| -------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 
 ---
 
