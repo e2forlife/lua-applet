@@ -7,6 +7,7 @@ This folder contains modules that can be `require`d by the application to provoc
     - [Using the framework in your Script](#using-the-framework-in-your-script)
     - [Application Framework API](#application-framework-api)
       - [Applet Values](#applet-values)
+      - [app.opts](#appopts)
       - [app.new](#appnew)
       - [A.framework\_version](#aframework_version)
       - [A.framework\_license](#aframework_license)
@@ -79,6 +80,7 @@ return my_app
 
 ### Application Framework API
 
+
 #### Applet Values
 
 Once created, the applet framework has default values generated for several values that are used by the framework.  The following table describes the applet values that can be used.
@@ -91,6 +93,21 @@ Once created, the applet framework has default values generated for several valu
 |   `detail`   |       `string`       | A long, detailed description of the applet, command line options and other information to assist the user when new to the applet use. |
 |  `license`   |       `string`       | A string that contains the license type and information for the applet                                                                |
 | ` copyright` |       `string`       | The copyright date and other information regarding the copyright information for the applet                                           |
+
+#### app.opts
+
+The application command line arguments are parsed into flags and assignments, then stored into the `app.opts` table.  This table uses the option name as the index, and the value of the option as the value stored in the table index.
+
+For example `--ofile=this.txt --option` would produce a table containing the assignments:
+
+```Lua
+app.opts = {
+  ofile = "this.txt",
+  option = true
+}
+```
+
+> ![Note](../../img/note50x50.png) All command line options are stored in the opts table, there are some, such as `ofile`, `quiet`, `version`, and `help` are handled directly by the framework and have special meaning.
 
 #### app.new
 
