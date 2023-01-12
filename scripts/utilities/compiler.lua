@@ -11,13 +11,13 @@ local sep  = package.config:sub(1,1) -- extract the separator
 package.path = ("..{SEP}modules{SEP}?.lua;.{SEP}modules{SEP}?.lua;"):gsub("{SEP}",sep) .. package.path
 ------------------------------------------------------------------------------
 local app = require "app"
-local progress = require "progress"
+local progress = require "progress2"
 ------------------------------------------------------------------------------
 local compile = app.new(false)  -- create the application framework object
 ------------------------------------------------------------------------------
 compile.name = "Lcompile"
 compile.brief = "Compile Lua source to binary chunk and/or C application file."
-compile.version = "1.3.2"  -- requires xLua w/ "ansi()" function
+compile.version = "2.0.0"  -- requires xLua w/ "ansi()" function
 compile.detail = [[
 Lcompile is a Lua compiler that was written in Lua!  It allows for the compilation
 of Lua source files into compiled binary modules and/or a C source file that can
@@ -129,7 +129,31 @@ function compile:compile_source( fname )
     local modname = file:split("[^.]+")
     if #modname > 1 then table.remove(modname,#modname) end
     modname = table.concat(modname,"_")
+   
+    -- new compile method for compiling lines to C
+    local app = "    "
+    local byte = 1
+    local pb = progress.new(50,#chunk)
+    pb.step = 12
+    ansi("{hide}") -- turn off cursor
+    while byte < #chunk do
+        ansi( pb:next() .. "  {c7}Compiling file {c14}"..file.."{c7}\r")
+        local ss = chunk:sub(byte,byte+12)
+        if #ss > 0 then
+            app = app .. ss:gsub(".",
+                function(c)
+                    return string.format("0x%02X, ",c:byte())
+                end
+                )
+                -- when the line was not a complete 12-byte line,
+                -- remove the trailing comma, and space.
+                if #ss <12 then app = app:sub(1,#app-2) end
+            byte = byte + 12
+            app = app .. "\n    "
+        end
+    end
 
+--[==[ Old method replaced with gsub method
     local app = "   "
     local byte = 0
     local pb = progress.new(0,#chunk)
@@ -146,6 +170,7 @@ function compile:compile_source( fname )
         end
         app = app .. string.format("0x%02X, ",v)
     end
+]==]
     ansi("{c7;b0;show}  Done\n")
 
     -- write chunk file when asked to do so
