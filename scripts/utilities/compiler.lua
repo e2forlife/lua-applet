@@ -17,7 +17,7 @@ local compile = app.new(false)  -- create the application framework object
 ------------------------------------------------------------------------------
 compile.name = "Lcompile"
 compile.brief = "Compile Lua source to binary chunk and/or C application file."
-compile.version = "2.1.0"  -- requires xLua w/ "ansi()" function
+compile.version = "2.2.0"  -- requires xLua w/ "ansi()" function
 compile.detail = [[
 Lcompile is a Lua compiler that was written in Lua!  It allows for the compilation
 of Lua source files into compiled binary modules and/or a C source file that can
@@ -29,7 +29,9 @@ be included in a standalone executable project.
    {c15}--ofile=   {c7}: {c2}define the target C-source file.
    {c15}--def=     {c7}: {c2}Include #define flags around generate source
    {c15}--app=     {c7}: {c2}module name of the application
-   {c15}--obj      {c7}: {c2}generate binary object modules for each source input
+   {c15}--obj=     {c7}: {c2}generate binary object modules for each source input
+   {c15}--legacy   {c7}: {c2}use Legacy file generation mode (this is SLOW)
+   {c15}--fast     {c7}: {c2}Enable "fast" mode output; no newlines in data.
    {c15}...        {c7}: {c2}the input lua file to compile to binary.
 {c7}------------------------------------------------------------------------------
 Lcompile will load the input specified Lua files and compile them to a
@@ -37,10 +39,16 @@ binary chunk creating a source file containing a loader and an execution
 function stubs for running the code.  Code that is "require"'d by the main
 application is compiled and stored in the output C-source file.  
 
+A note on object generation:
+This version of lcompile enable the pre-compilation of object files into
+*.chunk.c output objects.  You can use the --obj= option to set the object
+directory path, or just use the --obj to specify the current directory as
+the object path.
+
 Note that the order of the input files on the command line are important
-for the generated C-source, as they are required in the order that they are
+for the generated C-source, as they are loaded in the order that they are
 specified.  So, make sure that interdependencies are handled by placing
-files that require other files LAST in the list.
+files that require other files LAST in the input file list.
 
 To use this tool, pass the main source to the compiler as an input file
 along with the source of all the required modules (unless you want to
@@ -146,21 +154,33 @@ function compile:compile_source( fname )
     if not self.opts.legacy then
         -- new compile method for compiling lines to C
         local byte = 0
-        local pb = progress.new(50,#chunk)
-        pb.step = 12
-        ansi("{hide}") -- turn off cursor
-        while byte < #chunk do
-            ansi( pb:next() .. "  {c7}Compiling file {c14}"..file.."{c7}\r")
-            local ss = chunk:sub(byte+1,byte+12)
-            if #ss > 0 then
-                app = app .. ss:gsub(".",
-                    function(c)
-                        return string.format("0x%02X, ",c:byte())
-                    end
-                    )
-                byte = byte + 12
-                app = app .. "\n    "
+        if not self.opts.fast then
+            local pb = progress.new(50,#chunk)
+            pb.step = 12
+            ansi("{hide}") -- turn off cursor
+            while byte < #chunk do
+                ansi( pb:next() .. "  {c7}Compiling file {c14}"..file.."{c7}\r")
+                local ss = chunk:sub(byte+1,byte+12)
+                if #ss > 0 then
+                    app = app .. ss:gsub(".",
+                        function(c)
+                            return string.format("0x%02X, ",c:byte())
+                        end
+                        )
+                    byte = byte + 12
+                    app = app .. "\n    "
+                end
             end
+        else
+            -- generate "fast" mode data output (all on one line)
+            -- that will just burst generate the output with no
+            -- newlines.  this is generally most useful for huge
+            -- lua source that takes a while to compile.
+            app = app .. chunk:gsub(".",
+                function(c)
+                    return string.format("0x%02X, ",c:byte())
+                end
+            )
         end
     else
         -- Legacy method replaced with gsub method

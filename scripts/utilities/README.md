@@ -33,6 +33,18 @@ Lcompile --quiet --def=<define> --app=<object> --obj --ofile=<output> ...
 |  --obj   | generate binary object modules for each source input |
 |   ...    | the input Lua file to compile to binary              |
 
+### Version 2.1+ note
+
+**Version 2.1.0** (and up) of lcompile modifies the default file generation algorithm for faster response.  This can be modified using the `--fast` option flag on the command line to accelerate the output by not generating newlines in the output data blocks.  This can greatly accelerate the file processing time required to generate the chunk files, however, the files will not be very readable.  When compatibility is required with previious version of lcompile, the `--legacy` option can be used to enable compatibility mode.
+
+New options and features
+
++ New fast generation of compiled source files
++ `--fast` flag added to accelerate further by dropping line splits and processing files as one block
++ `--legacy` flag add to enable *compatibility mode* with v1.0 lcompile
++ `--obj` flag new allows the assignment of a target path for the storage of compiled output
++ compiler detects pre-compiled source (extensions that are not `lua`) and inserts rather than load and compile.
+
 ### Description
 
    Lcompile will load the input specified Lua files and compile them to a
@@ -41,8 +53,14 @@ Lcompile --quiet --def=<define> --app=<object> --obj --ofile=<output> ...
    statements in the main application is compiled and stored in the output
    C-source file.  
    
+   A note on object generation:
+   This version of lcompile enable the pre-compilation of object files into
+   *.chunk.c output objects.  You can use the --obj= option to set the object
+   directory path, or just use the --obj to specify the current directory as
+   the object path.
+
    The order of the input files on the command line are important
-   for the generated C-source, as they are required in the order that they are
+   for the generated C-source, as they are loaded in the order that they are
    specified.  So, make sure that interdependencies are handled by placing
    files that require other files LAST in the list.  For example if there
    was a project that contains a common code that is used by both the
