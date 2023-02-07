@@ -17,7 +17,7 @@ local compile = app.new(false)  -- create the application framework object
 ------------------------------------------------------------------------------
 compile.name = "Lcompile"
 compile.brief = "Compile Lua source to binary chunk and/or C application file."
-compile.version = "2.0.0"  -- requires xLua w/ "ansi()" function
+compile.version = "2.1.0"  -- requires xLua w/ "ansi()" function
 compile.detail = [[
 Lcompile is a Lua compiler that was written in Lua!  It allows for the compilation
 of Lua source files into compiled binary modules and/or a C source file that can
@@ -121,85 +121,117 @@ ${REQDATA}
 /* END OF FILE ============================================================ */
 ]]
 ------------------------------------------------------------------------------
-function compile:compile_source( fname )
-    local chunk = string.dump( loadfile(fname,"bt"),true )
-
+function compile:get_modname( fname )
+    -- split the file path name to get the file name and the pat seperate.
     local path = fname:split("[^/\\]+")
-    local file = path[#path]   -- filename (sans path)
-    local modname = file:split("[^.]+")
+    local file = path[#path]   -- filename (sans path) is the last entry in the table
+    local modname = file:split("[^%.]+") -- seperate the file name from the extenstion
+    local ext = modname[#modname] -- grab the extension of the file loaded
     if #modname > 1 then table.remove(modname,#modname) end
+    -- convert the table back to a string using underscores
+    -- as the seperator.
     modname = table.concat(modname,"_")
-   
-    -- new compile method for compiling lines to C
+    modname = modname:gsub("[%-%s]+","_") -- replace dash with underscore
+
+    return modname, file, ext
+end
+------------------------------------------------------------------------------
+function compile:compile_source( fname )
+    -- load lua source and compile to a chunk.
+    local chunk = string.dump( loadfile(fname,"bt"),true )
+    -- then grab the filename and module name from the file.
+    local modname, file = self:get_modname(fname)
     local app = "    "
-    local byte = 1
-    local pb = progress.new(50,#chunk)
-    pb.step = 12
-    ansi("{hide}") -- turn off cursor
-    while byte < #chunk do
-        ansi( pb:next() .. "  {c7}Compiling file {c14}"..file.."{c7}\r")
-        local ss = chunk:sub(byte,byte+12)
-        if #ss > 0 then
-            app = app .. ss:gsub(".",
-                function(c)
-                    return string.format("0x%02X, ",c:byte())
-                end
-                )
-                -- when the line was not a complete 12-byte line,
-                -- remove the trailing comma, and space.
-                if #ss <12 then app = app:sub(1,#app-2) end
-            byte = byte + 12
-            app = app .. "\n    "
+   
+    if not self.opts.legacy then
+        -- new compile method for compiling lines to C
+        local byte = 0
+        local pb = progress.new(50,#chunk)
+        pb.step = 12
+        ansi("{hide}") -- turn off cursor
+        while byte < #chunk do
+            ansi( pb:next() .. "  {c7}Compiling file {c14}"..file.."{c7}\r")
+            local ss = chunk:sub(byte+1,byte+12)
+            if #ss > 0 then
+                app = app .. ss:gsub(".",
+                    function(c)
+                        return string.format("0x%02X, ",c:byte())
+                    end
+                    )
+                byte = byte + 12
+                app = app .. "\n    "
+            end
+        end
+    else
+        -- Legacy method replaced with gsub method
+        local byte = 0
+        local pb = progress.new(0,#chunk)
+        pb.char = {"{c7}=", "{c4}\\", "{c12}|", "{c14}/", "{c10}#" }
+        pb.plain = self.plain -- propogate plain mode
+        for _,v in ipairs({chunk:byte(1,#chunk)} ) do
+            pb:next()  -- update progressbar position
+            pb:render() -- draw it onscreen
+            ansi("  compiling {c14}"..file)
+            byte = byte + 1
+            if byte > 12 then
+                byte = 1
+                app = app .. "\n   "
+            end
+            app = app .. string.format("0x%02X, ",v)
         end
     end
+    ansi("{c7;b0;show}\n  Done\n")
 
---[==[ Old method replaced with gsub method
-    local app = "   "
-    local byte = 0
-    local pb = progress.new(0,#chunk)
-    pb.char = {"{c7}=", "{c4}\\", "{c12}|", "{c14}/", "{c10}#" }
-    pb.plain = self.plain -- propogate plain mode
-    for _,v in ipairs({chunk:byte(1,#chunk)} ) do
-        pb:next()  -- update progressbar position
-        pb:render() -- draw it onscreen
-        ansi("  compiling {c14}"..file)
-        byte = byte + 1
-        if byte > 12 then
-            byte = 1
-            app = app .. "\n   "
-        end
-        app = app .. string.format("0x%02X, ",v)
-    end
-]==]
-    ansi("{c7;b0;show}  Done\n")
-
-    -- write chunk file when asked to do so
-    if self.opts.obj then
-        local chunkfile = io.open(modname..".chunk","w+b")
-        if chunkfile then
-            chunkfile:write(chunk)
-            chunkfile:close()
-        else
-            self:message("Error","Error writing file {c13}"..modname..".chunk")
-        end
-    end
     -- return the base filename, the module name, and nthe copiled chunk data
     return modname, app, #chunk
 end
 ------------------------------------------------------------------------------
 function compile:compile( file )
-    local mod,data,size = self:compile_source(file)
-    -- requirement was processed. add to the output file
-    -- and build the require list
-    local tplt = self.require_template:gsub("${MODNAME}", mod)
-    tplt = tplt:gsub("${BINDATA}",data)
-    tplt = tplt:gsub("${SIZE}", size)
+    local mod,fname,ftype = self:get_modname(file)
+    local tplt = ""
+    local data = ""
+    local size = 0
+    if ftype:lower() ~= "lua" then
+        -- load a pre-compiled object
+        mod = mod:gsub("_chunk","") -- remove chunk portion of name
+        self:message("info","Loading precompiled module {c6}%s{c7}.",mod)
+        local fil = io.open(file,"r")
+        if not fil then
+            self:message("error","Could not opern pre-compiled module {c9}%s{c7}.",fname)
+            return nil,nil
+        end
+        tplt = fil:read("a") -- load the precompiled module
+        fil:close()
+    else
+        mod,data,size = self:compile_source(file)
+        -- requirement was processed. add to the output file
+        -- and build the require list
+        tplt = self.require_template:gsub("${MODNAME}", mod)
+        tplt = tplt:gsub("${BINDATA}",data)
+        tplt = tplt:gsub("${SIZE}", size)
+    
+        if self.opts.obj then
+            local obj = ""
+            if type(self.opts.obj) == "string" then
+                obj = string.format("%s%s%s.chunk.c",self.opts.obj, sep, mod)
+            else
+                obj = string.format("%s.chunk.c",mod)
+            end
+            local chunkfile = io.open(obj,"w+")
+            if chunkfile then
+                chunkfile:write(tplt)
+                chunkfile:close()
+            else
+                self:message("Error","Error writing module {c13}%s{c7} to file {c11}%s{c7}.", mod, obj)
+            end
+        end
+    end
     return mod, tplt
 end
 -- Framework callbacks =======================================================
 ------------------------------------------------------------------------------
 function compile:init()
-    -- tool initialization
+    -- tool initialization and setting of default options and switches
 end
 ------------------------------------------------------------------------------
 function compile:main( ifile, ofile )
@@ -227,6 +259,10 @@ function compile:main( ifile, ofile )
     local requires = ""
     for _,source in ipairs(ifile) do
         local modname, code = self:compile(source)
+        if modname == nil then 
+            self:message("error","Errors detected during compilation.")
+            return false, "compile error"
+        end
         source_data[modname] = code
         -- assign the default application
         if not self.opts.app and self.opts.ofile then
@@ -245,15 +281,15 @@ function compile:main( ifile, ofile )
             self:message("Info","Adding {c5}#ifdef{c7} conditionals for {c11}"..self.opts.def)
             ofile:write("#ifdef "..self.opts.def.."\n")
         end
-        self:message("Info","Writing output file {c15}"..outfile)
+        self:message("Info","Writing output file {c15}%s",outfile)
         local hdr = self.header:gsub("${VER}",_VERSION)
         ofile:write(hdr)
         -- write the module loaders
         for name,code in pairs(source_data) do
-            self:message("Info","Writing module {c11}"..name)
+            self:message("Info","Writing module {c11}%s",name)
             ofile:write(code)
         end
-        self:message("Info", "Writing application execution code for module {b92;c15}  "..self.opts.app.."  {c7;b0}")
+        self:message("Info", "Writing application execution code for module {b92;c15}  %s  {c7;b0}",self.opts.app)
         local tplt = self.template:gsub("${NAME}", self.opts.app)
         tplt = tplt:gsub("${REQDATA}", requires)
         ofile:write(tplt)
