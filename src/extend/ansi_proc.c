@@ -149,6 +149,8 @@ static const ansi_cmds cmds[] =
 {
 	{ "c",       ansi_fg_color },
 	{ "b",       ansi_bg_color },
+	{ "fg",      ansi_fg_color },
+	{ "bg",      ansi_bg_color },
 	{ "up",      ansi_cursor_up },
 	{ "down",    ansi_cursor_down },
 	{ "left",    ansi_cursor_left },
