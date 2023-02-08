@@ -118,6 +118,7 @@ static int conv_uint32(lua_State *L )
 			lua_Integer val = lua_tointeger(L,1);
 			char *bfr = (char*)&val;
 			if (big) swap_endian(bfr,4);
+			lua_pushlstring(L, bfr, 4);
 	}
 	else if (lua_isstring(L,1)) {
 		// convert from string to Unit32
