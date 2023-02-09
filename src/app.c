@@ -22,6 +22,9 @@
 #include "lualib.h"
 
 int luaopen_ext(lua_State *L);     /* Add general extensions */
+#ifdef WIN32
+int luaopen_brooks_serial(lua_State *L);
+#endif
 
 int app_run(lua_State *L);
 
@@ -166,7 +169,9 @@ static int pmain (lua_State *L) {
   luaL_openlibs(L);
 
   /* Extenstions ---------------------------------------------------------- */
-//  luaopen_brooks_serial(L);  /* Extend with serial() */
+#ifdef WIN32
+  luaopen_brooks_serial(L);  /* Extend with serial() */
+#endif
   luaopen_ext(L);     /* Add general extensions */
   /* ---------------------------------------------------------------------- */
 
