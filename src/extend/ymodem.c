@@ -14,11 +14,16 @@
  * work. If not, see <http://creativecommons.org/licenses/by-nc-sa/4.0/>.
  */
 /* ------------------------------------------------------------------------ */
-#include "xlib.h"
+#include "ymodem.h"
 
-#if XOPT_USE_PROTOCOL_YMODEM == 1
 #include <ctype.h>
 #include <stdarg.h>
+#include <stdint.h>
+#include <stdbool.h>
+/* ------------------------------------------------------------------------ */
+#define XOPT_YMODEM_MAX_PACKET_SIZE   2048
+#define XOPT_YMODEM_TIMEOUT_CHAR      1000
+#define XOPT_YMODEM_MAX_TRIES         10
 
 /* ------------------------------------------------------------------------ */
 #define _ym_max(a,b)   ( (a>b)?a:b)
@@ -46,8 +51,7 @@
  * These are defined configuration macros for binding the YMODEM driver
  * implementation to the underlying tick API for delays and timing.
  */
-#define _YM_GET_TICK               arch_tick_get_value_unsafe
-#define _YM_DELAY                  arch_tick_delay_unsafe
+#define _YM_DELAY                  Sleep
 
 /* Private Data =========================================================== */
 static uint32_t _ym_fs_state = YM_RES_OK;
@@ -99,9 +103,7 @@ static uint32_t ymodem_receive_xmodem_packet( bool crc )
     /* determine the length of the packet */
     uint32_t plen = 0;
     if (sop == YM_SOH) plen = 128;
-#if XOPT_YMODEM_1K_SUPPORT == 1
     else if (sop == YM_STX) plen = 1024;
-#endif
     else if (sop == YM_EOT) return YM_RES_END_OF_TRANSFER;
     else if (sop == YM_CAN) return YM_RES_CANCEL;
     else return YM_RES_ERROR;
@@ -149,11 +151,7 @@ static uint32_t ymodem_verify_xmodem_packet(uint8_t *packet, bool crc)
 /* ------------------------------------------------------------------------ */
 uint32_t ymodem_receive_xmodem_unsafe(bool ascii_mode )
 {
-#if XOPT_YMODEM_SUPPORT_CRC == 1
     bool crc = true;
-#else
-    bool crc = false;
-#endif
     uint32_t packet = 0;
     uint32_t res = YM_RES_TIMEOUT;
     uint8_t codes[3] = { YM_CRC, YM_ACK, YM_NAK };
@@ -294,11 +292,7 @@ static uint32_t ymodem_send_xmodem_packet(uint8_t block, bool crc, uint8_t *stat
     uint32_t checksum;
     uint32_t bytes_read;
     uint32_t response;
-#if (XOPT_YMODEM_1K_SUPPORT == 1)
     uint32_t packet_length = 1024;  //+5 for header and CRC
-#else
-    uint32_t packet_length = 128;  // +5  for header and CRC
-#endif
     uint32_t data_size = 0;
 
     _ym_packet_ws[1] = block;
@@ -357,11 +351,7 @@ static uint32_t ymodem_send_xmodem_packet(uint8_t block, bool crc, uint8_t *stat
 /* ------------------------------------------------------------------------ */
 uint32_t ymodem_send_xmodem_unsafe( void )
 {
-#if XOPT_YMODEM_SUPPORT_CRC == 1
     bool crc = true;
-#else
-    bool crc = false;
-#endif
     uint32_t ntries = XOPT_YMODEM_MAX_TRIES;
     uint32_t response;
     uint32_t res;
@@ -375,11 +365,7 @@ uint32_t ymodem_send_xmodem_unsafe( void )
     do {
         response = ym_getc(XOPT_YMODEM_TIMEOUT_CHAR*5);
         --ntries;
-#if XOPT_YMODEM_SUPPORT_CRC == 1
     } while ((response != 'C') && (response != YM_NAK) && (ntries > 0));
-#else
-	} while ((response != YM_NAK) && (ntries > 0));
-#endif
 
     if (ntries == 0) return YM_RES_TIMEOUT;
     crc = (response == 'C');
@@ -409,6 +395,7 @@ uint32_t ymodem_get_error(void)
  * read/write API for loading/storing the file data from the transfer.
  */
 /* ------------------------------------------------------------------------ */
+#if(0)
 // Write a block of data that was received
 __attribute__((weak)) uint32_t ym_stream_write(uint32_t block_id, uint8_t *block, uint32_t size)
 {
@@ -458,7 +445,6 @@ __attribute__((weak)) uint32_t ym_receive(uint8_t* packet, uint32_t size, uint32
 	return 0;
 }
 /* ------------------------------------------------------------------------ */
-
 #endif
 
 /* EnD OF FILE ============================================================ */

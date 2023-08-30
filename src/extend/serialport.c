@@ -4,7 +4,7 @@
 #include <windows.h>
 #include "serialport.h"
 #include "lua_ext_error.h"
-
+#include "ymodem.h"
 
 /**
 	\brief Opens a new connection to a serial port
@@ -117,4 +117,5 @@ void closeSerialPort(HANDLE hSerial)
 	}
 	else CloseHandle(hSerial);
 }
+
 #endif

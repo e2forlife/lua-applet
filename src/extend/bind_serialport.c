@@ -18,6 +18,8 @@
 
 #ifdef SERIALPORT_H
 
+#include "ymodem.h"
+
 #define TIMEOUT    (1000)    /**< global timeout for serial ops */
 
 #define check_nl(c)    ( (c=='\r')||(c=='\n') )
@@ -31,6 +33,8 @@ typedef struct {
 	uint32_t parity;
 	bool   initialized;
 } lua_serialport_type;
+
+HANDLE ym_serial;
 
 #define LUA_EXT_SERIALPORT   ("_SERIALPORT_")
 /* ------------------------------------------------------------------------ */
@@ -175,5 +179,25 @@ LUALIB_API int __cdecl luaopen_brooks_serial( lua_State *L)
 	lua_setglobal(L, "serial");
 	return 0;
 }
+/* ------------------------------------------------------------------------ */
+
+/* YMODEM Bindings to serial poert interface ------------------------------ */
+void ym_flush( void )
+{
+
+}
+/* ------------------------------------------------------------------------ */
+void ym_putc(char c)
+{
+	writeToSerialPort(ym_serial, &c, 1);
+}
+/* ------------------------------------------------------------------------ */
+uint32_t ym_getc( uint32_t timeout)
+{
+	uint32_t
+}
+/* ------------------------------------------------------------------------ */
+void ym_send( uint8_t* packet, uint32_t size);
+uint32_t ym_receive(uint8_t* packet, uint32_t size, uint32_t timeout);
 
 #endif
