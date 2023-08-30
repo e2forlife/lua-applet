@@ -93,7 +93,7 @@ end
 -- this function returns a checksum on a block of data
 function utils.checksum(block)
     local sum = 0
-    for _,v in ipairs({string:byte(1,#block)}) do
+    for _,v in ipairs({block:byte(1,#block)}) do
         sum = sum + v
     end
     return sum

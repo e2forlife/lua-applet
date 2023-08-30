@@ -4,6 +4,9 @@
 #define SERIALPORT_H
 #include <windows.h>
 
+
+#define COM_DELAYS    (0)    // set this to (1) to use COM setup from CodeDownload
+
 enum Baudrate
 {
 	B50	= 50,

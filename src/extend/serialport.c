@@ -48,11 +48,28 @@ HANDLE openSerialPort(LPCSTR portname,enum Baudrate baudrate, enum Stopbits stop
 		return NULL;
 	}
 	COMMTIMEOUTS timeouts={0};
-	timeouts.ReadIntervalTimeout=50;
-	timeouts.ReadTotalTimeoutConstant=50;
-	timeouts.ReadTotalTimeoutMultiplier=10;
-	timeouts.WriteTotalTimeoutConstant=50;
-	timeouts.WriteTotalTimeoutMultiplier=10;
+#if  (COM_DELAYS == 0)
+	timeouts.ReadIntervalTimeout = 50;
+	timeouts.ReadTotalTimeoutConstant = 50;
+	timeouts.ReadTotalTimeoutMultiplier = 10;
+	timeouts.WriteTotalTimeoutConstant = 50;
+	timeouts.WriteTotalTimeoutMultiplier = 10;
+#elif (COM_DELAYS == 1)
+	// these are the port delays from CodeDownload application
+	// in Visual Studio
+	timeouts.ReadIntervalTimeout = 200; // 50;
+	timeouts.ReadTotalTimeoutConstant = 50;
+	timeouts.ReadTotalTimeoutMultiplier = 100; // 10;
+	timeouts.WriteTotalTimeoutConstant = 1000; // 50;
+	timeouts.WriteTotalTimeoutMultiplier = 10;
+#else
+	timeouts.ReadIntervalTimeout = 200; // 50;
+	timeouts.ReadTotalTimeoutConstant = 50;
+	timeouts.ReadTotalTimeoutMultiplier = 100; // 10;
+	timeouts.WriteTotalTimeoutConstant = 1000; // 50;
+	timeouts.WriteTotalTimeoutMultiplier = 10;
+#endif
+
 	if(!SetCommTimeouts(hSerial, &timeouts)){
 		error_log(__LINE__, __FILE__, 4, "SetCommTimeouts");
 		return NULL;

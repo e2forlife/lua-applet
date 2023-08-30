@@ -87,6 +87,77 @@ static int lua_ext_delay( lua_State* L)
     }\
 } while(0)
 /* ======================================================================== */
+static int conv_int64(lua_State *L )
+{
+	bool big = lua_toboolean(L, 2);
+	if (lua_isinteger(L,1)) {
+			// convert from int to string
+			lua_Integer val = lua_tointeger(L,1);
+			char *bfr = (char*)&val;
+			if (big) swap_endian(bfr,8);
+			lua_pushlstring(L, bfr, 8);
+	}
+	else if (lua_isstring(L,1)) {
+		// convert from string to Unit32
+		int64_t* val= (int64_t*) lua_tostring(L,1);
+		char *c = (char*)val;
+		if (big) swap_endian(c,8);
+		lua_pushinteger(L, (*val)&0xFFFFFFFFFFFFFFFF);
+	}
+	else return
+			luaL_error(L,"Incompatible type for argument 1, expected string or integer");
+
+	return 1;
+}
+/* ------------------------------------------------------------------------ */
+static int conv_int32(lua_State *L )
+{
+	bool big = lua_toboolean(L, 2);
+	if (lua_isinteger(L,1)) {
+			// convert from int to string
+			lua_Integer val = lua_tointeger(L,1);
+			char *bfr = (char*)&val;
+			if (big) swap_endian(bfr,4);
+			lua_pushlstring(L, bfr, 4);
+	}
+	else if (lua_isstring(L,1)) {
+		// convert from string to Unit32
+		int32_t* val = (int32_t*) lua_tostring(L,1);
+		char *c = (char*)val;
+		if (big) swap_endian(c,4);
+		lua_Integer I = *val;
+		lua_pushinteger(L, I);
+	}
+	else return
+			luaL_error(L,"Incompatible type for argument 1, expected string or integer");
+
+	return 1;
+}
+/* ------------------------------------------------------------------------ */
+static int conv_int16(lua_State *L )
+{
+	bool big = lua_toboolean(L, 2);
+	if (lua_isinteger(L,1)) {
+		// convert from int to string
+		lua_Integer val = lua_tointeger(L,1);
+		char *bfr = (char*)&val;
+		if (big) swap_endian(bfr,2);
+		lua_pushlstring(L, bfr, 2);
+	}
+	else if (lua_isstring(L,1)) {
+		// convert from string to Unit32
+		int16_t* val= (int16_t*) lua_tostring(L,1);
+		if (big) swap_endian(((char*)val),2);
+		lua_Integer I = *val;
+		lua_pushinteger(L, I);
+	}
+	else return
+			luaL_error(L,"Incompatible type for argument 1, expected string or integer");
+
+	return 1;
+}
+
+/* ======================================================================== */
 static int conv_uint64(lua_State *L )
 {
 	bool big = lua_toboolean(L, 2);
@@ -122,10 +193,11 @@ static int conv_uint32(lua_State *L )
 	}
 	else if (lua_isstring(L,1)) {
 		// convert from string to Unit32
-		lua_Integer* val= (lua_Integer*) lua_tostring(L,1);
+		uint32_t* val= (uint32_t*) lua_tostring(L,1);
 		char *c = (char*)val;
 		if (big) swap_endian(c,4);
-		lua_pushinteger(L, (*val)&0xFFFFFFFF);
+		lua_Integer I = *val;
+		lua_pushinteger(L, I);
 	}
 	else return
 			luaL_error(L,"Incompatible type for argument 1, expected string or integer");
@@ -168,9 +240,10 @@ static int conv_uint16(lua_State *L )
 	}
 	else if (lua_isstring(L,1)) {
 		// convert from string to Unit32
-		lua_Integer* val= (lua_Integer*) lua_tostring(L,1);
+		uint16_t* val= (uint16_t*) lua_tostring(L,1);
 		if (big) swap_endian(((char*)val),2);
-		lua_pushinteger(L, (*val)&0xFFFF);
+		lua_Integer I = *val;
+		lua_pushinteger(L, I);
 	}
 	else return
 			luaL_error(L,"Incompatible type for argument 1, expected string or integer");
@@ -300,6 +373,13 @@ LUALIB_API int luaopen_ext( lua_State *L)
 	lua_setglobal(L,"float");
 	lua_pushcfunction(L,conv_double);
 	lua_setglobal(L,"double");
+
+	lua_pushcfunction(L,conv_int64);
+	lua_setglobal(L,"int64");
+	lua_pushcfunction(L,conv_int32);
+	lua_setglobal(L,"int32");
+	lua_pushcfunction(L,conv_int16);
+	lua_setglobal(L,"int16");
 
 	lua_pushcfunction(L,lua_ext_getchar);
 	lua_setglobal(L,"getc");

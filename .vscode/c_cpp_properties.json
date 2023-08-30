@@ -8,22 +8,22 @@
         {
             "name": "PlatformIO",
             "includePath": [
-                "/home/chuck/Documents/lua-applet/include",
-                "/home/chuck/Documents/lua-applet/src",
-                "/home/chuck/Documents/lua-applet/lib/lua-5.4.3",
+                "/home/chuck/Projects/lua-applet/include",
+                "/home/chuck/Projects/lua-applet/src",
+                "/home/chuck/Projects/lua-applet/lib/lua-5.4.3",
                 ""
             ],
             "browse": {
                 "limitSymbolsToIncludedHeaders": true,
                 "path": [
-                    "/home/chuck/Documents/lua-applet/include",
-                    "/home/chuck/Documents/lua-applet/src",
-                    "/home/chuck/Documents/lua-applet/lib/lua-5.4.3",
+                    "/home/chuck/Projects/lua-applet/include",
+                    "/home/chuck/Projects/lua-applet/src",
+                    "/home/chuck/Projects/lua-applet/lib/lua-5.4.3",
                     ""
                 ]
             },
             "defines": [
-                "PLATFORMIO=60105",
+                "PLATFORMIO=60110",
                 "LUA_EXE",
                 ""
             ],
